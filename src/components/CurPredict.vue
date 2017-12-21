@@ -1,36 +1,22 @@
 <template>
-  <div>
-    <header class="mui-bar mui-bar-nav">
-        <h1 class="mui-title">专家上期预测中</h1>
-        <a href="activities.html" class="mui-pull-right icon-text">
-            <span class="mui-icon iconfont icon-huodong"></span>
-            <span class="mui-tab-label">活动</span>
-        </a>
-    </header>
-    <lottery-classify v-bind:lotterys="lotterys" v-bind:curLottery="curLottery" @change="changeLtype"></lottery-classify>
-    <div class="mui-slider home" id="slider1">
-        <div class="mui-slider-group">
-            <div class="mui-slider-item" v-for="group in lotterys">
-                <div>
-                    <div class="flex-auto">
-                        <router-link :to="{name:'history',params:{lotterytype:group.code,lotteryname:group.name}}" class="res-board mui-navigate-right">
-                            <h3>第{{group.periods}}期开奖结果</h3>
-                            <ol>
-                                <li class="ball" v-for="ball in group.lotteryFormat[0]">{{ball}}</li>
-                                <li class="ball blue" v-for="ball in group.lotteryFormat[1]">{{ball}}</li>
-                            </ol>
-                        </router-link>
-                        <div class="notice mui-ellipsis">
-                            <span class="iconfont icon-message"></span>喜！141期头奖1000万中3注，权威专家带您一起中！
+    <div>
+        <header class="mui-bar mui-bar-nav"><h1 class="mui-title">专家本期预测</h1><a class="mui-icon-extra mui-icon-extra-share mui-pull-right"></a></header>
+        <lottery-classify v-bind:lotterys="lotterys" v-bind:curLottery="curLottery" @change="changeLtype"></lottery-classify>
+        <div class="mui-slider home" id="slider1">
+            <div class="mui-slider-group">
+                <div class="mui-slider-item" v-for="group in lotterys">
+                    <div>
+                        <div class="flex-auto">
+                            <div class="notice mui-ellipsis">
+                                141期头奖1000万中3注，权威专家带您一起中！
+                            </div>
+                            <div class="mini-classify">
+                                <ul>
+                                    <li v-for="(item,index) in group.product" v-on:click="changeForecast" v-bind:data-index="index" v-bind:class="group.product[group.curforecast].code==item.code?'active mui-col-xs-3':'mui-col-xs-3'"><span>{{item.name}}</span></li><li v-if="group.product.length>5" class="mui-col-xs-3" node-act="combine"><span>收起 <i class="mui-icon mui-icon-arrowup"></i></span></li>
+                                </ul>
+                            </div>
                         </div>
-                        <div class="mini-classify">
-                            <ul>
-                                <li v-for="(item,index) in group.product" v-on:click="changeForecast" v-bind:data-index="index" v-bind:class="group.product[group.curforecast].code==item.code?'active mui-col-xs-3':'mui-col-xs-3'"><span>{{item.name}}</span></li><li v-if="group.product.length>5" class="mui-col-xs-3" node-act="combine"><span>收起 <i class="mui-icon mui-icon-arrowup"></i></span></li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="scroll-container">
-                        <div>
+                        <div class="scroll-container">
                             <div class="mui-content mui-scroll-wrapper mui-scroll-wrapper-segmented li-praised">
                                 <div class="mui-scroll">
                                     <ul class="mui-table-view mui-table-view-striped mui-table-view-condensed">
@@ -39,10 +25,10 @@
                                                 <img class="mui-media-object mui-pull-left" v-bind:src="li.expertspic">
                                                 <div class="mui-media-body">
                                                     <h3><span>{{li.expertsname}}</span><small>{{li.rank}}</small></h3>
-                                                    <div class="balls">后区定六 <p class="mui-inline mui-col-xs-8 mui-col-ms-9"><span class="mball" v-if="ball" v-for="ball in li.lotteryFormat[0]">{{ball}}</span><span class="mball blue" v-if="ball" v-for="ball in li.lotteryFormat[1]">{{ball}}</span></p></div>
+                                                    <p class='mui-ellipsis mui-col-xs-10'>{{group.product[group.curforecast].name}}：<span class="color-link">想中大奖，必看该专家的预测号码</span></p>
                                                     <p class='mui-ellipsis'>{{li.expertdesc}}</p>
                                                 </div>
-                                                <em>{{li.forecastresult}}</em>
+                                                <em class="iconfont icon-ioseye"></em>
                                             </a>
                                         </li>
                                     </ul>
@@ -53,8 +39,7 @@
                 </div>
             </div>
         </div>
-    </div>
-    <vfooter active="0"></vfooter>
+        <vfooter active="1"></vfooter>
     </div>
 </template>
 
@@ -65,89 +50,9 @@ import $ from '../js/zepto.js';
 import Vue from 'vue';
 import lotteryClassify from './common/lottery-classify.vue'
 import vfooter from './common/vfooter.vue'
+var pullRefreshArr = []
 
 var bus = new Vue();
-
-function callbackTpl(lotterys, curLottery, curforecast, load, d) {
-    if(d.statuscode != '1'){
-        return;
-    }
-    lotterys[curLottery].periods = d.periods;
-    lotterys[curLottery].lotteryFormat = lotteryFormat(d.lottery);
-    d.returnlist.map(function(item) {
-        item.lotteryFormat = lotteryFormat(item.periodscon)
-    })
-    lotterys[curLottery].product[curforecast].pagecount = d.pagecount;
-    lotterys[curLottery].product[curforecast].list = load && lotterys[curLottery].product[curforecast].list ? lotterys[curLottery].product[curforecast].list.concat(d.returnlist) : d.returnlist;
-}
-
-function lotteryFormat(str) {
-    var ret = [];
-    str.split('|').forEach(function(item, i) {
-        ret[i] = item.split(',');
-    })
-    return ret;
-}
-
-function getData(params, callback) {
-    $.ajax({
-        url: '/forecast/forecastprivlist.jsp',
-        data: params,
-        dataType: 'json',
-        success: function(d) {
-            callback(d)
-        }
-    })
-}
-lotterys.map(function(item) { //初始化数据结构
-    $.extend(item, {
-        lotteryFormat: [
-            [],
-            []
-        ],
-        periods: '',
-        curforecast: 0
-    })
-    item.product.map(function(_item) {
-        _item.pagecount = 1;
-        _item.page = 1;
-    })
-})
-
-var pullRefreshArr = []
-mui.ready(function() {
-    mui('.lottery-classify').scroll({
-        scrollY: false, //是否竖向滚动
-        scrollX: true
-    });
-    //循环初始化所有下拉刷新，上拉加载。
-    mui.each(document.querySelectorAll('.mui-scroll-wrapper-segmented'), function(index, pullRefreshEl) {
-        var oPullRefresh = mui(pullRefreshEl).pullRefresh({
-            down: {
-                callback: pulldownRefresh
-            },
-            up: {
-                contentrefresh: '正在加载...',
-                callback: pullupRefresh
-            }
-        });
-        pullRefreshArr.push(oPullRefresh)
-
-        /**
-         * 下拉刷新具体业务实现
-         */
-        function pulldownRefresh() {
-          bus.$emit('pulldown',pullRefreshEl)
-        }
-        /**
-         * 上拉加载具体业务实现
-         */
-        function pullupRefresh() {
-          bus.$emit('pullup',pullRefreshEl)
-        }
-    });
-    
-});
 
 function combine(list, _this) {
     list.each(function(i) {
@@ -173,8 +78,85 @@ $(document).on('click', '[node-act="combine"]', function() {
     }
 })
 
+lotterys.map(function(item) { //初始化数据结构
+    $.extend(item, {
+        periods: '',
+        curforecast: 0
+    })
+    item.product.map(function(_item) {
+        _item.pagecount = 1;
+        _item.page = 1;
+        _item.list = []
+    })
+})
+
+function getData(params, callback) {
+    $.ajax({
+        url: '/forecast/forecastlist.jsp',
+        data: params,
+        dataType: 'json',
+        success: function(d) {
+            // pullRefreshArr[vm.curLottery].refresh(true)
+            // pullRefreshArr[vm.curLottery].scrollTo(0,0);
+            callback(d)
+        }
+    })
+}
+
+function lotteryFormat(str) {
+    var ret = [];
+    str.split('|').forEach(function(item, i) {
+        ret[i] = item.split(',');
+    })
+    return ret;
+}
+
+function callbackTpl(lotterys, curLottery, curforecast, load, d) {
+    lotterys[curLottery].periods = d.periods;
+    d.returnlist.map(function(item) {
+        item.lotteryFormat = lotteryFormat(item.periodscon)
+    })
+    lotterys[curLottery].product[curforecast].pagecount = d.pagecount;
+    lotterys[curLottery].product[curforecast].list = load && lotterys[curLottery].product[curforecast].list ? lotterys[curLottery].product[curforecast].list.concat(d.returnlist) : d.returnlist;
+}
+
+mui.ready(function() {
+    mui('.lottery-classify').scroll({
+        scrollY: false, //是否竖向滚动
+        scrollX: true
+    });
+    //循环初始化所有下拉刷新，上拉加载。
+    mui.each(document.querySelectorAll('.mui-scroll-wrapper-segmented'), function(index, pullRefreshEl) {
+        var oPullRefresh = mui(pullRefreshEl).pullRefresh({
+            down: {
+                callback: pulldownRefresh
+            },
+            up: {
+                contentrefresh: '正在加载...',
+                callback: pullupRefresh
+            }
+        });
+
+        pullRefreshArr.push(oPullRefresh)
+
+        /**
+         * 下拉刷新具体业务实现
+         */
+        function pulldownRefresh() {
+            console.log('pulldown')
+            bus.$emit('pulldown',pullRefreshEl)
+        }
+        /**
+         * 上拉加载具体业务实现
+         */
+        function pullupRefresh() {
+          bus.$emit('pullup',pullRefreshEl)
+        }
+    });
+});
+
 export default {
-  name: 'index',
+  name: 'curPredict',
   data () {
     return {
       lotterys : lotterys,
@@ -195,14 +177,14 @@ export default {
             }, function(d) {
                 callbackTpl(this.lotterys, curLottery, curforecast, 0, d)
                 pullRefreshArr[curLottery].refresh(true)
-                pullRefreshArr[curLottery].scrollTo(0,0)
             }.bind(this));
         },
-        changeLtype: function(index) {
-            var curLottery = index,curforecast = 0;
+        changeLtype: function(event) {
+            var dataset = event.target.dataset;
+            var curLottery = dataset.index,curforecast = 0;
             this.curLottery = curLottery;
             this.lotterys[curLottery].product[curforecast].page = 1;
-            mui(`.mui-slider`).slider().gotoItem(index);
+            mui(`.mui-slider`).slider().gotoItem(dataset.index);
             getData({
                 forecasttype: this.lotterys[curLottery].product[curforecast].code,
                 lotterytype: this.lotterys[curLottery].code,
@@ -213,8 +195,27 @@ export default {
             }.bind(this))
         }
     },
+    created: function() {
+        var curLottery = 0,
+            curforecast = 0;
+        getData({
+            forecasttype: this.lotterys[curLottery].product[curforecast].code,
+            lotterytype: this.lotterys[curLottery].code,
+            page: 1,
+            pagesize: 20
+        }, function(d) {
+            callbackTpl(this.lotterys, curLottery, curforecast, 0, d)
+        }.bind(this))
+
+        this.$nextTick(function(){
+            document.querySelector('#slider1').addEventListener('slide', function(event) {
+              bus.$emit('slide',event.detail.slideNumber)
+            });
+        })
+    },
     mounted:function(){
       bus.$on('pulldown', function (pullRefreshEl) {//pulldown
+        console.log('pulldown------',this)
         var curLottery = this.curLottery;
         var curforecast = this.lotterys[this.curLottery].curforecast;
         var nomore = false;
@@ -270,29 +271,10 @@ export default {
             callbackTpl(this.lotterys, curLottery, curforecast, 0, d)
         })
       }.bind(this))
-    },
-    created: function() {
-        var curLottery = 0,
-            curforecast = 0;
-        getData({
-            forecasttype: this.lotterys[curLottery].product[curforecast].code,
-            lotterytype: this.lotterys[curLottery].code,
-            page: 1,
-            pagesize: 20
-        }, function(d) {
-            callbackTpl(this.lotterys, curLottery, curforecast, 0, d)
-        }.bind(this))
-        this.$nextTick(function(){
-            document.querySelector('#slider1').addEventListener('slide', function(event) {
-              bus.$emit('slide',event.detail.slideNumber)
-            });
-            pullRefreshArr.forEach(oPull =>{
-                oPull.refresh(true);
-            })
-        })
     }
 }
 </script>
+
 <style lang="scss" scoped>
-  @import '../assets/css/index';
+  @import '../assets/css/cur-predict';
 </style>

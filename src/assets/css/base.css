@@ -1,7 +1,7 @@
 @import './icons-extra';
 
 @font-face {font-family: "iconfont";
-  src: url('../assets/fonts/iconfont.ttf') format('truetype');
+  src: url('assets/fonts/iconfont.ttf') format('truetype');
 }
 body {
     color: #5c5757;
